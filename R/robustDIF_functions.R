@@ -453,6 +453,7 @@ rdif <- function(mle,
   if (out$multiple.solutions) {
     out$other.solutions <- sols[ -min.sol]
   }
+  class(out) <- "rdif"
  out
 }
 
@@ -544,7 +545,9 @@ rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
   r <- apply(rho(U, k), 2, sum)
   names(r) <- NULL
 
-  list(theta = theta, rho = r)
+  out <- list(theta = theta, rho = r)
+  class(out) <- "rdif.rho"
+  out
 }
 
 # -------------------------------------------------------------------
