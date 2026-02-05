@@ -453,6 +453,7 @@ rdif <- function(mle,
   if (out$multiple.solutions) {
     out$other.solutions <- sols[ -min.sol]
   }
+  out$df <- substitute(mle)
   class(out) <- "rdif"
  out
 }

@@ -16,8 +16,13 @@
 #' }
 summary.rdif <- function(object, fun = "d_fun3", ...) {
 
+  rdif.obj <- eval((object[["df"]]), parent.frame())
+  df.name <- as.character(object[["df"]])
+  n.iter <- as.character(object$n.iter)
+  n.sols <- object$multiple.solutions
+
   dif.test.res <- tryCatch(
-   dif_test(mle = object, theta=NULL, fun = fun,  ...),
+   dif_test(mle = rdif.obj, theta=NULL, fun = fun,  ...),
    error = function(e){
      warning("dif_test failed: ", conditionMessage(e))
      NULL
@@ -25,12 +30,21 @@ summary.rdif <- function(object, fun = "d_fun3", ...) {
  )
 
  delta.test.res <- tryCatch(
-   delta_test(mle = object, fun = fun, alpha = 0.05, ...),
+   delta_test(mle = rdif.obj, fun = fun, alpha = 0.05, ...),
    error = function(e) {
      warning("delta_test failed: ", conditionMessage(e))
      NULL
    }
 )
+ cat("Robust Differential Item Functioning in IRT Model estimated by IRLS.\n\n")
+ cat("Data:", df.name, "\n")
+ cat("Estimation ended after ", n.iter, " iterations.\n")
+ if (n.sols) {
+   cat("Multiple solutions found.\n\n")
+ }
+ if (!n.sols) {
+   cat("Single solution found.\n\n")
+ }
 
  cat("Results from Wald Tests of DIF:\n")
  if (!is.null(dif.test.res)) {

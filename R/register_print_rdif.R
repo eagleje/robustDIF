@@ -25,7 +25,7 @@
   }
 
   # Register summary method for class "rdif" if available.
-  # if (exists("summary.rdif", mode = "function", envir = envir)) {
-  #   registerS3method("summary", "rdif.sum", get("summary.rdif", envir = envir), envir = ns)
-  # }
+  if (exists("summary.rdif", mode = "function", envir = envir)) {
+    registerS3method("summary", "rdif", get("summary.rdif", envir = envir), envir = ns)
+  }
 }
