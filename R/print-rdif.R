@@ -16,10 +16,11 @@
 print.rdif <- function(object) {
   if (!inherits(object, "rdif")) stop("Object is not of class 'rdif'")
   est <- object$est
+  se <- object[["delta.test"]][["rdif.se"]]
   if (is.null(est)) {
     cat("Estimated scaling parameter is null.\n")
   } else {
-    cat("Estimated scaling parameter:", est, "\n")
+    cat("Estimated scaling parameter:", est, "    RDIF Standard Error:", se, "\n")
   }
   invisible(object)
 }

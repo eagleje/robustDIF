@@ -590,6 +590,7 @@ rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
 dif_test <- function(mle, theta = NULL, fun = "d_fun3") {
   if (inherits(mle, "rdif")) {
     out <- mle[["dif.test"]]
+    message("mle is of class 'rdif.' Returning original rdif() results. Any additional arguments were ignored.")
     return(out)
   }
 
@@ -635,6 +636,7 @@ delta_test <- function(mle, fun = "d_fun3", alpha = 0.05)
 {
   if (inherits(mle, "rdif")) {
     out <- mle[["delta.test"]]
+    message("mle is of class 'rdif.' Returning original rdif() results. Any additional arguments were ignored.")
     return(out)
   }
 
