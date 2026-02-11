@@ -455,6 +455,18 @@ rdif <- function(mle,
   }
   out$df <- substitute(mle)
   class(out) <- "rdif"
+
+  # Call dif_test() and delta_test
+  if (!is.na(out[["est"]])) {
+    out.est <- out[["est"]]
+    dif.test.res <- dif_test(mle, theta = out.est, fun=fun)
+    out$dif.test <- dif.test.res
+
+    out.k <- out[["k"]]
+    delta.test.res <- delta_test_internal(mle = mle, y = y, est = out.est, k = out.k, fun = fun, alpha = alpha)
+    out$delta.test <- delta.test.res
+  }
+
  out
 }
 
@@ -576,6 +588,11 @@ rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
 # -------------------------------------------------------------------
 
 dif_test <- function(mle, theta = NULL, fun = "d_fun3") {
+  if (inherits(mle, "rdif")) {
+    out <- mle[["dif.test"]]
+    return(out)
+  }
+
   if (is.null(theta)) {
     rdif.out <- rdif(mle, fun)
     theta <- rdif.out$est
@@ -616,6 +633,11 @@ dif_test <- function(mle, theta = NULL, fun = "d_fun3") {
 
 delta_test <- function(mle, fun = "d_fun3", alpha = 0.05)
 {
+  if (inherits(mle, "rdif")) {
+    out <- mle[["delta.test"]]
+    return(out)
+  }
+
   # Set up
   y <- y_fun(mle, fun)
   n <- length(y)
@@ -694,6 +716,44 @@ delta_test_from_dif <- function(dif.items, mle, fun = "d_fun3", alpha = 0.05)
     p.val = p.val)
 }
 
+delta_test_internal <- function(mle, y, est, k, fun = "d_fun3", alpha = 0.05)
+{
+  # Set up
+  y <- y  # Y
+  n <- length(y)
+  y.bar <- mean(y)
+  #rdif.out <- rdif(mle, fun, alpha) # Unneeded
+  rdif.theta <- est
+  delta <- y.bar - rdif.theta
 
+  vcov.y <- vcov_y(mle, theta = NULL, fun) # Same
+  var.y <- Matrix::diag(vcov_y(mle, theta = rdif.theta, fun)) # Same
+  u <- (y - rdif.theta) / sqrt(var.y)
+  k <-  k  #out.k
+  psi.prime <- psi_prime(u, k)
 
+  # Variance weights
+  v.bar <- rep(1/n, n)
+  v.psi.prime <- (pmax(psi.prime, 0)  / var.y) / sum(pmax(psi.prime, 0) / var.y)
+
+  # SEs
+  se.y.bar <- sqrt(t(v.bar)%*%vcov.y%*%(v.bar))[1,1]
+  se.rdif.theta <- sqrt(t(v.psi.prime)%*%vcov.y%*%(v.psi.prime))[1,1]
+  se.delta <- sqrt(t(v.bar - v.psi.prime)%*%vcov.y%*%(v.bar - v.psi.prime))[1,1]
+
+  # Delta test
+  z <- delta / se.delta
+  p.val <- (1 - pnorm(abs(z))) * 2
+
+  #Output
+  data.frame(
+    naive.est = y.bar,
+    naive.se = se.y.bar,
+    rdif.est = rdif.theta,
+    rdif.se = se.rdif.theta,
+    delta = delta,
+    delta.se = se.delta,
+    z.test = z,
+    p.val = p.val)
+}
 

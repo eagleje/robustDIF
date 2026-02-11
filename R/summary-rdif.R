@@ -16,26 +16,13 @@
 #' }
 summary.rdif <- function(object, fun = "d_fun3", ...) {
 
-  rdif.obj <- eval((object[["df"]]), parent.frame())
   df.name <- as.character(object[["df"]])
   n.iter <- as.character(object$n.iter)
   n.sols <- object$multiple.solutions
+  theta <- as.character(round(object[["est"]], 3))
+  se <- as.character(round(object[["delta.test"]][["rdif.se"]], 4))
+  walds <- as.data.frame(object[["dif.test"]])
 
-  dif.test.res <- tryCatch(
-   dif_test(mle = rdif.obj, theta=NULL, fun = fun,  ...),
-   error = function(e){
-     warning("dif_test failed: ", conditionMessage(e))
-     NULL
-   }
- )
-
- delta.test.res <- tryCatch(
-   delta_test(mle = rdif.obj, fun = fun, alpha = 0.05, ...),
-   error = function(e) {
-     warning("delta_test failed: ", conditionMessage(e))
-     NULL
-   }
-)
  cat("Robust Differential Item Functioning in IRT Model estimated by IRLS.\n\n")
  cat("Data:", df.name, "\n")
  cat("Estimation ended after ", n.iter, " iterations.\n")
@@ -45,20 +32,10 @@ summary.rdif <- function(object, fun = "d_fun3", ...) {
  if (!n.sols) {
    cat("Single solution found.\n\n")
  }
+ cat("Est:", theta, "   SE:", se, "\n\n")
 
  cat("Results from Wald Tests of DIF:\n")
- if (!is.null(dif.test.res)) {
-   print(dif.test.res)
- } else {
-   cat("<DIF Test results not found>\n")
- }
-
- cat("\nResults from Delta Test about Impact:\n")
- if (!is.null(delta.test.res)) {
-   print(delta.test.res)
- } else {
-   cat("<Delta Test results not found>\n")
- }
+ print(walds)
 
  invisible(NULL)
 
