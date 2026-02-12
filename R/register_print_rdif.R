@@ -2,7 +2,7 @@
 #' Registers S3 methods at load time:
 #' - print for class "rdif"
 #' - plot for class "rdif.rho"
-#' - summary for class "rdif.sum" (TBD)
+#' - summary for class "rdif"
 #'
 #' @param libname
 #' @param pkgname

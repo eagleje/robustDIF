@@ -2,7 +2,7 @@
 #' S3 print method for objects of class "rdif"
 #' Prints the estimated scaling parameter from rdif. (to be added: SE)
 #'
-#' @param object The saved output from the \code{rdif()} function.
+#' @param object An object of class 'rdif', the saved output from the \code{rdif()} function.
 #'
 #' @return An object of class rdif, a string with rdif estimate value.
 #' @export

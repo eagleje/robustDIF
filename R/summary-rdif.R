@@ -1,20 +1,17 @@
 # -------------------------------------------------------------------
 #' S3 summary method for objects of class "rdif.sum"
-#' Prints: results of dif_test, results of delta_test
 #'
-#' @param object A saved list of parameter values from \code{\link[robustDIF]{get_model_parms}}
-#' @param fun One of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}.
-#' @param ... Additional arguments to be passed to \code{dif_test()} and \code{delta_test{}}
+#' @param object An object of class 'rdif', a saved list of values from \code{rdif()}
 #'
 #' @return A printed summary of values
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' # Assuming "rdif.eg" is a list of parameter values
+#' # Assuming "rdif.eg" is the output from \code{rdif()}
 #' summary.rdif(rdif,eg)
 #' }
-summary.rdif <- function(object, fun = "d_fun3", ...) {
+summary.rdif <- function(object) {
 
   df.name <- as.character(object[["df"]])
   n.iter <- as.character(object$n.iter)
