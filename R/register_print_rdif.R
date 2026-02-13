@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------
 #' Registers S3 methods at load time:
 #' - print for class "rdif"
-#' - plot for class "rdif.rho"
+#' - plot for class "rdif"
 #' - summary for class "rdif"
 #'
 #' @param libname
@@ -21,7 +21,7 @@
 
   # Register plot method for class "rdif" if available.
   if (exists("plot.rdif.rho", mode = "function", envir = envir)) {
-    registerS3method("plot", "rdif.rho", get("plot.rdif.rho", envir = envir), envir = ns)
+    registerS3method("plot", "rdif", get("plot.rdif.rho", envir = envir), envir = ns)
   }
 
   # Register summary method for class "rdif" if available.

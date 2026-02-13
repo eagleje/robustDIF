@@ -351,6 +351,7 @@ bsq_weight <- function(u, k = 1.96) {
 #' @param tol convergence criterion for comparing subsequent values of estimate
 #' @param maxit maximum number of iterations
 #' @param method one of \code{c("irls", "newton")}. Currently, only IRLS is implemented.
+#' @param ... additional arguments to pass to \code{rho_grid()}
 #'
 #' @return A named list containing the estimate of the IRT scale parameter, the bi-square weights, the number of iterations performed, and the value of the convergence criterion (difference of  estimate between subsequent iterations). If multiple solutions were found, the one with the lowest value of the bi-square objective function is returned and the other solutions are appended to the list as \code{other.solutions}.
 #'
@@ -374,7 +375,8 @@ rdif <- function(mle,
                  starting.value = "all",
                  tol = 1e-7,
                  maxit = 100,
-                 method = "irls") {
+                 method = "irls",
+                 ...) {
   nit <- 0
   conv <- 1
 
@@ -466,6 +468,10 @@ rdif <- function(mle,
     delta.test.res <- delta_test_internal(mle = mle, y = y, est = out.est, k = out.k, fun = fun, alpha = alpha)
     out$delta.test <- delta.test.res
   }
+
+  # Calls rho_grid()
+  rho.grid.res <- rho_grid(mle = mle, fun = fun, alpha = alpha, ...)
+  out$rho.plot <- rho.grid.res
 
  out
 }
@@ -559,7 +565,6 @@ rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
   names(r) <- NULL
 
   out <- list(theta = theta, rho = r)
-  class(out) <- "rdif.rho"
   out
 }
 
