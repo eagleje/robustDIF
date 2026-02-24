@@ -375,6 +375,23 @@ rdif <- function(mle,
                  tol = 1e-7,
                  maxit = 100,
                  method = "irls") {
+
+  if (!is.list(mle)) {
+    warning("'mle' must be a formatted list. See get_model_parms() documentation for formatting.")
+    return(FALSE)
+  }
+
+  expected.names <- c("est", "var.cov")
+  missing <- setdiff(expected.names, names(mle))
+
+  if (length(missing) > 0) {
+    warning(sprintf(
+      "'mle' is missing required elements: %s\nSee get_model_parms() documentation for formatting.",
+      paste(missing, collapse = ", ")
+    ))
+    return(FALSE)
+  }
+
   nit <- 0
   conv <- 1
 
@@ -484,6 +501,18 @@ rdif <- function(mle,
 # -------------------------------------------------------------------
 
 get_starts <- function(mle, fun = "d_fun3", alpha = .05){
+  expected.names <- c("est", "var.cov")
+  missing <- setdiff(expected.names, names(mle))
+
+  if (length(missing) > 0) {
+    warning(sprintf(
+      "'mle' is missing required elements: %s\nSee get_model_parms() documentation for formatting.",
+      paste(missing, collapse = ", ")
+    ))
+    return(FALSE)
+  }
+
+
   y <- y_fun(mle, fun)
 
   s1 <- median(y)
@@ -544,6 +573,16 @@ lts <- function(y, p = 0.5) {
 # -------------------------------------------------------------------
 
 rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
+  expected.names <- c("est", "var.cov")
+  missing <- setdiff(expected.names, names(mle))
+
+  if (length(missing) > 0) {
+    warning(sprintf(
+      "'mle' is missing required elements: %s\nSee get_model_parms() documentation for formatting.",
+      paste(missing, collapse = ", ")
+    ))
+    return(FALSE)
+  }
 
   y <- y_fun(mle, fun)
   theta <- seq(from = max(min(y), -2), to = min(max(y), 2), by = grid.width)
@@ -682,11 +721,26 @@ delta_test <- function(mle, theta, k, fun = "d_fun3")
 
 delta_test_from_dif <- function(mle, dif.items, fun = "d_fun3")
 {
+  expected.names <- c("est", "var.cov")
+  missing <- setdiff(expected.names, names(mle))
+
+  if (length(missing) > 0) {
+    warning(sprintf(
+      "'mle' is missing required elements: %s\nSee get_model_parms() documentation for formatting.",
+      paste(missing, collapse = ", ")
+    ))
+    return(FALSE)
+  }
   # Set up
   y <- y_fun(mle, fun)
   vcov.y <- vcov_y(mle, fun = fun)
   n <- length(y)
   n0 <- n - length(dif.items)
+
+  if(n<length(dif.items) | max(dif.items)>n) {
+    warning("Incorrect specification of dif items. Either too many have been specified or their indices are incorrect.")
+    return(FALSE)
+  }
 
   # Weights
   w.bar <- rep(1/n, n)
