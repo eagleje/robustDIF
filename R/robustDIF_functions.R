@@ -116,7 +116,10 @@ y_fun <- function(mle, fun = "d_fun3") {
 #' The gradient is taken with respect to the item parameters and organized to be conformable with \code{Matrix::bdiag(mle$var.cov)}. When evaluating the gradient under the null hypothesis of no DIF, the optional argument \code{theta} can be provided. It replaces the item-specific values of d_fun in the gradient computation.
 #'
 #' @inheritParams d_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
 #' @param theta (optional) the scaling parameter. Replaces item-specific values of d_fun if provided.
+#' @param type a number in \code{1:3} indicating which version of delta to compute in \code{d_fun}.
+#'
 #' @return A matrix in which the columns are the gradient vectors of \code{\link[robustDIF]{d_fun}}, for each item and threshold.
 #' @seealso \code{\link[robustDIF]{d_fun}}
 #' @export
@@ -186,7 +189,10 @@ grad_d <- function(mle, theta = NULL, type = 3) {
 #' The gradient is taken with respect to the item parameters and organized to be conformable with \code{Matrix::bdiag(mle$var.cov)}. When evaluating the gradient under the null hypothesis of no DIF, the optional argument \code{theta} can be provided. It replaces the item-specific values of a_fun in the gradient computation.
 #'
 #' @inheritParams a_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
 #' @param theta (optional) the scaling parameter. Replaces item-specific values of alpha if provided.
+#' @param log logical: return of log(a2/a1) in \code{a_fun}?
+#'
 #' @return A matrix in which the columns are the gradient vectors of \code{\link[robustDIF]{a_fun}}, for each item.
 #' @seealso \code{\link[robustDIF]{a_fun}}
 #' @export
@@ -239,7 +245,9 @@ grad_a <- function(mle, theta = NULL, log = F) {
 #' When evaluating the covariance matrix under the null hypothesis of no DIF, the optional argument \code{theta} can be provided. It replaces the item-specific scaling functions in the gradient computation. Type should be the same as used in \code{\link[robustDIF]{y_fun}}.
 #'
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
 #' @param theta (optional) the scaling parameter. Replaces item-specific scaling functions if provided.
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #
 #' @return The covariance matrix of \code{y_fun}.
 #'
@@ -344,15 +352,17 @@ bsq_weight <- function(u, k = 1.96) {
 # -------------------------------------------------------------------
 #' Estimate IRT scale parameters using the robust DIF procedure.
 #'
-#' Implements M-estimation of an IRT scale parameter using the bi-square loss function. Also returns the bi-square weights for each item. #'
+#' Implements M-estimation of an IRT scale parameter using the bi-square loss function. Also returns the bi-square weights for each item.
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param alpha the desired false positive rate for flagging items with DIF.
 #' @param starting.value one of \code{c("med", "lts", "min_rho", "all")} or a numerical value to be used as the starting value. See description for details.
 #' @param tol convergence criterion for comparing subsequent values of estimate
 #' @param maxit maximum number of iterations
 #' @param method one of \code{c("irls", "newton")}. Currently, only IRLS is implemented.
 #'
-#' @return An \code{rdif} object.
+#' @return An \code{rdif} object, a list of parameter values from the rDIF procedure, related Wald delta and dif tests, and rho values.
 #'
 #' @description
 #' Estimation can be performed using iteratively re-weighted least squares (IRLS) or Newton-Raphson (NR). Currently, only IRLS is implemented. If \code{starting.value = "all"}, three starting values are computed: the median of \code{\link[robustDIF]{y_fun}}, the least trimmed squares estimate of location for \code{\link[robustDIF]{y_fun}} with 50-percent trim rate, and the minimum of \code{\link[robustDIF]{rho_grid}}. The estimate is computed from each starting value, and the solution with the lowest value of the bi-square objective function is returned. If there are multiple solutions, they are stored \code{other.solutions}.
@@ -495,6 +505,8 @@ rdif <- function(mle,
 #' Compute staring values for \code{\link[robustDIF]{rdif}}.
 #'
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param alpha the desired false positive rate for flagging items with DIF.
 #'
 #' @return A vector containing the median of \code{\link[robustDIF]{y_fun}}, the least trimmed squares estimate of location for \code{\link[robustDIF]{y_fun}} with 50-percent trim rate, and the minimum of \code{\link[robustDIF]{rho_grid}}.
@@ -565,6 +577,8 @@ lts <- function(y, p = 0.5) {
 #' Computes the objective function of the bi-square minimization problem in a location parameter, theta. The theta values are obtained internally by a grid search over the range of \code{\link[robustDIF]{y_fun}}. Used for starting values and graphically diagnosing local solutions.
 #'
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param alpha the desired false positive rate for flagging items with DIF.
 #' @param grid.width the width of grid points.
 #'
@@ -609,8 +623,10 @@ rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
 #' A Wald test of DIF on each item. Called internally by \code{\link[robustDIF]{rdif}}
 #'
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param theta the estimated scaling parameter from \code{\link[robustDIF]{rdif}}
-#' @return A data.frame whose rows containing the results of the test for each item parameter.
+#' @return A data.frame whose rows contain the results of the test for each item parameter.
 #'
 #' @examples
 #' \dontrun{
@@ -649,6 +665,8 @@ dif_test <- function(mle, theta, fun = "d_fun3") {
 #'
 
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param theta the estimated scaling parameter from \code{\link[robustDIF]{rdif}}
 #' @param k the tuning parameter from \code{\link[robustDIF]{rdif}}
 
@@ -707,6 +725,8 @@ delta_test <- function(mle, theta, k, fun = "d_fun3")
 #'
 
 #' @inheritParams y_fun
+#' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See \code{y_fun} for details.
 #' @param dif.items the indices of the items with DIF.
 
 #' @return A data.frame that contains the output of the test.

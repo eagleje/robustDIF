@@ -1,11 +1,11 @@
 
 # -------------------------------------------------------------------
 #' S3 print method for objects of class "rdif"
-#' Prints the estimated scaling parameter from rdif. (to be added: SE)
+#' Prints the estimated scaling parameter and SE from rdif.
 #'
 #' @param object An object of class 'rdif', the saved output from the \code{rdif()} function.
 #'
-#' @return An object of class rdif, a string with rdif estimate value.
+#' @return An object of class rdif, a string with rdif estimate and SE values.
 #' @export
 #'
 #' @examples
@@ -30,7 +30,7 @@ print.rdif <- function(object) {
 #'
 #' @param object An object of class 'rdif', a saved list of values from \code{rdif()}
 #'
-#' @return A printed summary of values
+#' @return A printed summary of values.
 #' @export
 #'
 #' @examples
