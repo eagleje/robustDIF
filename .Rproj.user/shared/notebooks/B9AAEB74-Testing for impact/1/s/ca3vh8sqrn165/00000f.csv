@@ -1,0 +1,5 @@
+"0","# Subset data to just items
+items <- data[,-39]
+"
+"2","Error in data[, -39] : object of type 'closure' is not subsettable
+"
