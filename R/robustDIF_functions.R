@@ -772,7 +772,8 @@ delta_test_from_dif <- function(mle, dif.items, fun = "d_fun3")
 #'   from mirt estimation.
 #' @param group A vector of cluster identifiers with length equal to the number of
 #'   observations in the data. Can be numeric or character. If NULL, assumes each
-#'   observation is in its own cluster (returns standard errors).
+#'   observation is in its own cluster if \code{SingleGroupClass} (returns standard errors) or
+#'   defaults to using group membership from the model if \code{MultipleGroupClass}.
 #' @param type Character string specifying the type of robust standard errors.
 #'   Options: \code{'HC0'} (unadjusted), \code{'HC1'} (bias-corrected),
 #'   \code{'HC2'} (Jackknife), \code{'HC3'} (Jackknife, more conservative).
