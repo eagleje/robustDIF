@@ -760,3 +760,41 @@ delta_test_from_dif <- function(mle, dif.items, fun = "d_fun3")
     z.test = z,
     p.val = p.val)
 }
+
+# -------------------------------------------------------------------
+#' Calculation of cluster robust standard errors from mirt.
+#'
+#' A function that calculates sandwich estimators for cluster-robust standard errors of \code{mirt()} outputs.
+#'
+
+#' @param dif.items the indices of the items with DIF.
+
+#' @return A data.frame that contains the output of the test.
+#' @examples
+#' #
+#' \dontrun{
+#' # Test for DTF omitting the first two items.
+#' delta_test_from_dif(mle = rdif.eg, dif.items = c(1, 2))
+#' }
+# -------------------------------------------------------------------
+
+rdif_crse <- function(mirt.object) {
+  ## check for 1-factor model
+  if(mirt.object@Model$nfact != 1){
+    stop("mirt.object must be a 1-factor model.")
+  }
+
+  dat <- try(mirt::extract.mirt(mirt.object, 'data'), silent=TRUE)
+
+  if(inherits(dat, 'try-error') || is.null(dat)) {
+    stop("No response data found in mirt model object. Cannot compute robust SEs.")
+  }
+
+  scores <- mirt::estfun.AllModelClass(mirt.object)
+  bread <- mirt::vcov(mirt.object)
+  meat <- crossprod(scores) / nrow(scores)
+
+  sandwich <- solve(bread) %*% meat %*% solve(bread)
+
+  sqrt(diag(sandwich))
+}
