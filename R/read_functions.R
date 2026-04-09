@@ -81,7 +81,7 @@ get_model_parms <- function(object, cluster = FALSE, ...) {
     )
   }
 
-  if(cluster) {
+  if(cluster & inherits(object, c("SingleGroupClass", "MultipleGroupClass"))) {
     crse <- rdif_crse(object, ...)
     out$cluster.robust.se <- crse
   }
