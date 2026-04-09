@@ -761,40 +761,249 @@ delta_test_from_dif <- function(mle, dif.items, fun = "d_fun3")
     p.val = p.val)
 }
 
-# -------------------------------------------------------------------
-#' Calculation of cluster robust standard errors from mirt.
+#' Calculate Cluster Robust Standard Errors for Mirt Models
 #'
-#' A function that calculates sandwich estimators for cluster-robust standard errors of \code{mirt()} outputs.
+#' This function computes cluster-robust (sandwich) standard errors for Item Response
+#' Theory (IRT) models estimated using the mirt package. Cluster-robust standard errors
+#' account for clustering in the data (e.g., students within schools) and heteroskedasticity,
+#' providing valid inference when observations are not independent.
 #'
-
-#' @param dif.items the indices of the items with DIF.
-
-#' @return A data.frame that contains the output of the test.
+#' @param object An object of class \code{MultipleGroupClass} or \code{SingleGroupClass}
+#'   from mirt estimation.
+#' @param group A vector of cluster identifiers with length equal to the number of
+#'   observations in the data. Can be numeric or character. If NULL, assumes each
+#'   observation is in its own cluster (returns standard errors).
+#' @param type Character string specifying the type of robust standard errors.
+#'   Options: \code{'HC0'} (unadjusted), \code{'HC1'} (bias-corrected),
+#'   \code{'HC2'} (Jackknife), \code{'HC3'} (Jackknife, more conservative).
+#'   Default is \code{'HC1'}.
+#'
+#' @return A list containing:
+#'   \item{cov_matrix}{The cluster-robust covariance matrix}
+#'   \item{se}{Vector of cluster-robust standard errors for all parameters}
+#'   \item{type}{The type of robust covariance estimator used}
+#'   \item{n_clusters}{Number of clusters}
+#'   \item{n_obs}{Number of observations}
+#'   \item{original_se}{Original standard errors from the model}
+#'   \item{comparison}{Data frame comparing original and cluster-robust SEs}
+#'
+#' @details
+#' The cluster-robust (sandwich) covariance matrix is computed as:
+#' \deqn{V_{CR} = (X'X)^{-1} X' \Omega X (X'X)^{-1}}
+#'
+#' where \eqn{X} is the Jacobian (score contributions) and \eqn{\Omega} is adjusted
+#' for cluster structure. Different HC adjustments are applied for finite-sample
+#' corrections.
+#'
 #' @examples
-#' #
 #' \dontrun{
-#' # Test for DTF omitting the first two items.
-#' delta_test_from_dif(mle = rdif.eg, dif.items = c(1, 2))
+#' # Single group example with clustering
+#' library(mirt)
+#' data(LSAT7)
+#' dat <- expand.table(LSAT7)
+#'
+#' # Fit a single group model
+#' mod <- mirt(dat, 1, verbose = FALSE, SE = TRUE)
+#'
+#' # Create cluster identifiers (e.g., students within schools)
+#' set.seed(123)
+#' clusters <- rep(1:100, length.out = nrow(dat))
+#'
+#' # Calculate cluster-robust standard errors
+#' cr_se <- rdif_crse(mod, group = clusters, type = 'HC1')
+#' print(cr_se)
+#'
+#' # Multiple group example
+#' group <- rep(c("G1", "G2"), c(500, 500))
+#' mod_mg <- multipleGroup(dat, 1, group, SE = TRUE, verbose = FALSE)
+#'
+#' clusters_mg <- rep(1:100, length.out = nrow(dat))
+#' cr_se_mg <- rdif_crse(mod_mg, group = clusters_mg, type = 'HC1')
+#' print(cr_se_mg)
 #' }
-# -------------------------------------------------------------------
+#'
+#' @references
+#' Cameron, A. C., & Miller, D. L. (2015). A practitioner's guide to cluster-robust
+#' inference. \emph{Journal of Human Resources}, 50(2), 317-372.
+#'
+#' @export
+rdif_crse <- function(object, group = NULL, type = 'HC1') {
 
-rdif_crse <- function(mirt.object) {
-  ## check for 1-factor model
-  if(mirt.object@Model$nfact != 1){
-    stop("mirt.object must be a 1-factor model.")
+  # Validate input object
+  if (!inherits(object, c('SingleGroupClass', 'MultipleGroupClass'))) {
+    stop("object must be of class SingleGroupClass or MultipleGroupClass from mirt",
+         call. = FALSE)
   }
 
-  dat <- try(mirt::extract.mirt(mirt.object, 'data'), silent=TRUE)
-
-  if(inherits(dat, 'try-error') || is.null(dat)) {
-    stop("No response data found in mirt model object. Cannot compute robust SEs.")
+  # Validate type argument
+  if (!type %in% c('HC0', 'HC1', 'HC2', 'HC3')) {
+    stop("type must be one of: 'HC0', 'HC1', 'HC2', 'HC3'", call. = FALSE)
   }
 
-  scores <- mirt::estfun.AllModelClass(mirt.object)
-  bread <- mirt::vcov(mirt.object)
-  meat <- crossprod(scores) / nrow(scores)
+  # Extract score contributions
+  scores <- tryCatch({
+    mirt::estfun.AllModelClass(object)
+  }, error = function(e) {
+    stop("Could not extract score contributions. Ensure SE = TRUE was used in model estimation. ",
+         "Error: ", conditionMessage(e), call. = FALSE)
+  })
 
-  sandwich <- solve(bread) %*% meat %*% solve(bread)
+  scores <- as.matrix(scores)
+  if (!is.numeric(scores)) {
+    stop("Score matrix must be numeric. Check model estimation.", call. = FALSE)
+  }
 
-  sqrt(diag(sandwich))
+  n_obs <- nrow(scores)
+
+  # AUTO-DETECT CLUSTERING FROM MULTIGROUP MODELS
+  if (is.null(group)) {
+    # Check if this is a multigroup model with multiple groups
+    if (inherits(object, 'MultipleGroupClass')) {
+      group <- mirt::extract.mirt(object, 'group')
+      message("Using group membership from multipleGroup model as cluster identifiers.")
+    } else {
+      group <- seq_len(n_obs)
+    }
+  } else {
+    group <- as.numeric(group)
+    if (length(group) != n_obs) {
+      stop("Length of cluster vector must equal number of observations (",
+           n_obs, ")", call. = FALSE)
+    }
+  }
+
+  # Get original variance-covariance matrix
+  vcov_original <- vcov(object)
+  original_se <- sqrt(diag(vcov_original))
+
+  # Compute meat matrix (cluster-adjusted)
+  G <- .compute_meat_matrix(scores, group, type)
+
+  # Compute cluster-robust covariance matrix
+  # V_cr = B^(-1) * G * B^(-1), where B = X'X (bread matrix)
+  bread <- crossprod(scores)
+  bread_inv <- tryCatch({
+    solve(bread)
+  }, error = function(e) {
+    stop("Cannot invert bread matrix. Score matrix may be singular.", call. = FALSE)
+  })
+
+  cov_cr <- bread_inv %*% G %*% bread_inv
+
+  # Extract standard errors from diagonal
+  se_cr <- sqrt(diag(cov_cr))
+
+  # Handle potential numerical issues
+  if (any(is.nan(se_cr)) || any(is.infinite(se_cr))) {
+    warning("Some cluster-robust standard errors are NaN or infinite. ",
+            "This may indicate numerical issues. Consider checking cluster structure.",
+            call. = FALSE)
+  }
+
+  # Create comparison data frame
+  n_groups <- length(unique(group))
+  param_names <- names(original_se)
+  if (is.null(param_names)) {
+    param_names <- paste0("Par", seq_along(original_se))
+  }
+
+  comparison <- data.frame(
+    Parameter = param_names,
+    Original_SE = original_se,
+    Cluster_Robust_SE = se_cr,
+    Ratio = se_cr / original_se,
+    stringsAsFactors = FALSE
+  )
+
+  # Return results
+  result <- list(
+    cov_matrix = cov_cr,
+    se = se_cr,
+    type = type,
+    n_clusters = n_groups,
+    n_obs = n_obs,
+    original_se = original_se,
+    comparison = comparison
+  )
+
+  # class(result) <- c('mirt_cluster_robust_se', 'list')
+  return(result)
 }
+
+#' Helper function to compute meat matrix with cluster adjustment
+#'
+#' @keywords internal
+.compute_meat_matrix <- function(scores, group, type) {
+
+  n <- nrow(scores)
+  p <- ncol(scores)
+  unique_groups <- unique(group)
+  n_groups <- length(unique_groups)
+
+  # Initialize meat matrix G
+  G <- matrix(0, nrow = p, ncol = p)
+
+  # Sum scores within each cluster and compute outer products
+  for (c in unique_groups) {
+    group_idx <- which(group == c)
+    # Sum scores for this cluster
+    group_score <- colSums(as.matrix(scores[group_idx, , drop = FALSE]))
+    # Ensure it's a numeric vector
+    group_score <- as.numeric(group_score)
+    # Add outer product to G
+    G <- G + tcrossprod(group_score)
+  }
+
+  # Apply finite-sample correction based on HC type
+  correction_factor <- switch(type,
+                              HC0 = 1,
+                              HC1 = n / (n - 1),
+                              HC2 = n / (n - n_groups),
+                              HC3 = n / (n - 1)
+  )
+
+  G <- G * correction_factor
+
+  return(G)
+}
+
+#' #' Print method for cluster-robust standard errors
+#' #'
+#' #' @param x Object of class \code{mirt_cluster_robust_se}
+#' #' @param ... Additional arguments passed to print
+#' #'
+#' #' @export
+#' print.mirt_cluster_robust_se <- function(x, ...) {
+#'   cat("\nCluster Robust Standard Errors for Mirt Models\n")
+#'   cat(strrep("=", 50), "\n", sep = "")
+#'   cat("Type of Estimator:   ", x$type, "\n")
+#'   cat("Number of Clusters:  ", x$n_clusters, "\n")
+#'   cat("Number of Observations:", x$n_obs, "\n\n")
+#'   print(x$comparison, row.names = FALSE)
+#'   invisible(x)
+#' }
+#'
+#' #' Summary method for cluster-robust standard errors
+#' #'
+#' #' @param object Object of class \code{mirt_cluster_robust_se}
+#' #' @param ... Additional arguments
+#' #'
+#' #' @export
+#' summary.mirt_cluster_robust_se <- function(object, ...) {
+#'   cat("\nSummary of Cluster Robust Standard Errors\n")
+#'   cat(strrep("=", 45), "\n", sep = "")
+#'   cat("Estimator Type:      ", object$type, "\n")
+#'   cat("Number of Clusters:  ", object$n_clusters, "\n")
+#'   cat("Total Observations:  ", object$n_obs, "\n\n")
+#'
+#'   cat("SE Ratio Statistics (Cluster-Robust SE / Original SE):\n")
+#'   cat("  Mean Ratio:  ", round(mean(object$comparison$Ratio), 3), "\n")
+#'   cat("  Min Ratio:   ", round(min(object$comparison$Ratio), 3), "\n")
+#'   cat("  Max Ratio:   ", round(max(object$comparison$Ratio), 3), "\n\n")
+#'
+#'   cat("Top 10 Parameters with Largest SE Changes:\n")
+#'   top_changes <- head(object$comparison[order(object$comparison$Ratio, decreasing = TRUE), ], 10)
+#'   print(top_changes, row.names = FALSE)
+#'
+#'   invisible(object)
+#' }

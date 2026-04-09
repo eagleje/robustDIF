@@ -9,6 +9,8 @@
 #' and formats the item parameter estimates and their covariance matrix for use in other \code{robustDIF} functions.
 #'
 #' @param object model fit from a multigroup analysis or list of model fits for each group for a 1-factor model. See Details.
+#' @param cluster An indicator for if cluster-robust (sandwich) standard errors should be calculated.
+#' @param ... Additional arguments to be passed to \code{rdif_crse()}.
 #'
 #' @details
 #' The function takes a fitted 1-factor multigroup model or list of fitted 1-factor single group models. The factor must be standardized (i.e., variance = 1) and the covariance matrix be asymptotically correct.
@@ -31,7 +33,7 @@
 #'
 # -------------------------------------------------------------------
 
-get_model_parms <- function(object) {
+get_model_parms <- function(object, cluster = FALSE, ...) {
   check_model_object(object)
 
   if(inherits(object, "list")){
@@ -78,6 +80,12 @@ get_model_parms <- function(object) {
       call. = FALSE
     )
   }
+
+  if(cluster) {
+    crse <- rdif_crse(object, ...)
+    out$cluster.robust.se <- crse
+  }
+
  reformat_out(out)
 }
 
