@@ -122,7 +122,6 @@ get_mirt_pars <- function(mirt.object, cluster = NULL){
   if(mirt.object@Model$nfact != 1){
     stop("mirt.object must be a 1-factor model.")
   }
-  # need to check itemtype? mirt.object@Model$itemtype
 
   ## number of items
   n.items <- mirt.object@Data$nitems
@@ -133,10 +132,20 @@ get_mirt_pars <- function(mirt.object, cluster = NULL){
     mo <- mirt.object
   }
 
+  # Check for Rasch
+  is_rasch <- all(mirt.object@Model$itemtype=="Rasch")
+
   ## extract slope and intercept parameter names for each item
-  item.pars <- lapply(1:n.items, function(x){
+  if(is_rasch) {
+    # For Rasch models, only extract d (difficulty) parameters
+    item.pars <- lapply(1:n.items, function(x){
+      parnames <- mo@ParObjects$pars[[x]]@parnames
+      parnames[grepl("^d$", parnames)]})
+  } else { # For others, extract a and d parameters
+    item.pars <- lapply(1:n.items, function(x){
                   parnames <- mo@ParObjects$pars[[x]]@parnames
                   parnames[grepl("^[ad][1-9]|[ad]$", parnames)]})
+  }
 
   original.names <- colnames(mirt.object@Data$data) # original item names
   internal.names <- paste0("item", 1:n.items) # item names for robustDIF
