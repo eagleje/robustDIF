@@ -140,7 +140,7 @@ get_mirt_pars <- function(mirt.object, cluster = NULL){
     # For Rasch models, only extract d (difficulty) parameters
     item.pars <- lapply(1:n.items, function(x){
       parnames <- mo@ParObjects$pars[[x]]@parnames
-      parnames[grepl("^d$", parnames)]})
+      parnames[grepl("^[d][1-9]|[d]$", parnames)]})
   } else { # For others, extract a and d parameters
     item.pars <- lapply(1:n.items, function(x){
                   parnames <- mo@ParObjects$pars[[x]]@parnames
@@ -165,10 +165,26 @@ get_mirt_pars <- function(mirt.object, cluster = NULL){
   }
 
   ## extracting vcov matrix and removing dimnames
+  if (is_rasch) {
+    if (is.null(cluster)) {
+    v <- mirt::vcov(mirt.object)
+    v <- v[
+      grepl("^d", rownames(v)),
+      grepl("^d", colnames(v))
+    ]
+    } else {
+      v <- get_mirt_vcov_cluster_oakes(mirt.object, cluster)
+      v <- v[
+        grepl("^d", rownames(v)),
+        grepl("^d", colnames(v))
+      ]
+    }
+  } else {
   if (is.null(cluster)) {
     v <- mirt::vcov(mirt.object)
   } else {
     v <- get_mirt_vcov_cluster_oakes(mirt.object, cluster)
+  }
   }
   if(inherits(mirt.object, "MultipleGroupClass")){
 
@@ -483,7 +499,11 @@ reformat_out <- function(out){
   pars.per.item <- lapply(new.items, function(x)grep(x, out$par.names$internal, fixed = T))
   max.pars.per.item <-max(Reduce(c, lapply(pars.per.item, length)))
   par.mat <- as.data.frame(matrix(NA, nrow = n.items, ncol = max.pars.per.item))
-  names(par.mat) <- c("a1", paste0("d", 1:(max.pars.per.item-1)))
+  if (ncol(par.mat) > 1) {
+    names(par.mat) <- c("a1", paste0("d", 1:(max.pars.per.item-1)))
+  } else {
+    names(par.mat) <- paste0("d", 1:(max.pars.per.item))
+  }
   row.names(par.mat) <- paste0("item", 1:n.items)
   n.groups <- length(out$est)
 
