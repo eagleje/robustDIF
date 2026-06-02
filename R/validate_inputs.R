@@ -17,9 +17,9 @@ check_mle <- function(mle) {
 }
 
 check_fun <- function(fun) {
-  allowed <- c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")
+  allowed <- c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3", "rasch")
   if (!is.character(fun) || length(fun) != 1 || !fun %in% allowed) {
-    stop("`fun` must be one of: 'a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3'.", call. = FALSE)
+    stop("`fun` must be one of: 'a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3', 'rasch'.", call. = FALSE)
   }
   invisible(TRUE)
 }

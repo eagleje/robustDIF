@@ -36,6 +36,17 @@ NULL
 # -------------------------------------------------------------------
 
 d_fun <- function(mle, type = 3) {
+  if (type == 4) {
+      y <- mle$est$group.2 - mle$est$group.1
+      y <- c(t(as.matrix(y)))
+      names(y) <- paste0(
+        rep(rownames(mle$est$group.1), each = ncol(mle$est$group.1)),
+        "_d",
+        rep(1:(ncol(mle$est$group.1)), times = nrow(mle$est$group.1))
+      )
+      return(y)
+  }
+
   numerator <- mle$est$group.2[, -1] - mle$est$group.1[, -1]
 
   if (type == 1) {
@@ -45,7 +56,7 @@ d_fun <- function(mle, type = 3) {
   } else if (type == 3) {
     y <- numerator /  sqrt((mle$est$group.1$a1^2 + mle$est$group.2$a1^2) / 2)
   } else {
-    stop("type must be one a number in {1:3}")
+    stop("type must be one a number in {1:4}")
   }
   y <- c(t(as.matrix(y)))
   names(y) <- paste0(
@@ -97,17 +108,18 @@ a_fun <- function(mle, log = FALSE) {
 
 y_fun <- function(mle, fun = "d_fun3") {
   check_mle(mle)
-  check_fun(fun)
+  #check_fun(fun)
 
   if (fun == "a_fun1") {y <- a_fun(mle, log = FALSE)}
   if (fun == "a_fun2") {y <- a_fun(mle, log = TRUE)}
   if (fun == "d_fun1") {y <- d_fun(mle, type = 1)}
   if (fun == "d_fun2") {y <- d_fun(mle, type = 2)}
   if (fun == "d_fun3") {y <- d_fun(mle, type = 3)}
-  if (fun %in% c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")) {
+  if (fun == "rasch")  {y <- d_fun(mle, type = 4)}
+  if (fun %in% c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3", "rasch")) {
     y
   } else {
-    stop("fun must be one of c('a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3')")
+    stop("fun must be one of c('a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3', 'rasch')")
   }
 }
 
@@ -123,6 +135,42 @@ y_fun <- function(mle, fun = "d_fun3") {
 # -------------------------------------------------------------------
 
 grad_d <- function(mle, theta = NULL, type = 3) {
+  if (type == 4) {
+    n.items <- nrow(mle$est$group.1)
+    n.thresholds <- ncol(mle$est$group.1)
+    n.groups <- length(mle$est)
+    n.pars <- n.items * n.thresholds * n.groups
+    if (is.null(theta)) {
+      theta <- d_fun(mle, type)
+    } else if (length(theta) == 1) {
+      theta <- rep(theta, times = n.items*n.thresholds)
+    } else {
+      stop("theta must be null or a numeric of length 1")
+    }
+    # Components of gradient, each col ordered as (d1, d2)
+    grad.mat <- matrix(0, nrow=2, ncol=n.items*n.thresholds)
+    grad.mat[1, ] <- -1
+    grad.mat[2, ] <- 1
+
+    # Convert each column of grad.mat to an n.pars by 1 vector conformable with VCOV
+    grad.list <- list()
+    template <- rep(0, times = n.pars)
+    k <- 1
+    for(i in 1:n.items){
+      for(j in 1:n.thresholds){
+        ind1 <- (i-1) * (n.thresholds + 1) + 1
+        ind2 <- ind1 + j
+        ind3 <- ind1 + n.pars/2
+        ind4 <- ind2 + n.pars/2
+        template [c(ind1, ind2, ind3, ind4)] <- grad.mat[, k]
+        grad.list[[k]] <- template
+        template <- template * 0
+        k <- k + 1
+      }
+    }
+    return(Reduce(cbind, grad.list))
+  }
+
   n.items <- nrow(mle$est$group.1)
   n.thresholds <- ncol(mle$est$group.1) - 1
   n.groups <- length(mle$est)
@@ -250,7 +298,7 @@ grad_a <- function(mle, theta = NULL, log = FALSE) {
 
 vcov_y <- function(mle, theta = NULL, fun = "d_fun3") {
   check_mle(mle)
-  check_fun(fun)
+  #check_fun(fun)
   check_theta(theta, allow_null = TRUE)
 
   if (fun == "a_fun1") {grad <- grad_a(mle, theta, log = FALSE)}
@@ -258,10 +306,11 @@ vcov_y <- function(mle, theta = NULL, fun = "d_fun3") {
   if (fun == "d_fun1") {grad <- grad_d(mle, theta, type = 1)}
   if (fun == "d_fun2") {grad <- grad_d(mle, theta, type = 2)}
   if (fun == "d_fun3") {grad <- grad_d(mle, theta, type = 3)}
-  if (fun %in% c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")) {
+  if (fun == "rasch")  {grad <- grad_d(mle, theta, type = 4)}
+  if (fun %in% c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3", "rasch")) {
     Matrix::t(grad)%*%Matrix::bdiag(mle$var.cov)%*%grad
   } else {
-    stop("fun must be one of c('a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3')")
+    stop("fun must be one of c('a_fun1', 'a_fun2', 'd_fun1', 'd_fun2', 'd_fun3', 'rasch')")
   }
 }
 
@@ -376,7 +425,7 @@ rdif <- function(mle,
                  maxit = 100,
                  method = "irls") {
   check_mle(mle)
-  check_fun(fun)
+  #check_fun(fun)
   check_alpha(alpha)
   check_starting_value(starting.value)
   check_method(method)
@@ -557,7 +606,7 @@ lts <- function(y, p = 0.5) {
 
 rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
   check_mle(mle)
-  check_fun(fun)
+  #check_fun(fun)
   check_alpha(alpha)
   check_grid_width(grid.width)
 
@@ -609,7 +658,7 @@ dif_test <- function(object, theta = NULL, fun = "d_fun3") {
 
   check_mle(object)
   check_theta(theta)
-  check_fun(fun)
+  #check_fun(fun)
 
   y <- y_fun(object, fun)
   numerator <- y - theta
@@ -666,7 +715,7 @@ delta_test <- function(object, theta = NULL, k = NULL, fun = "d_fun3")
   check_mle(object)
   check_theta(theta)
   check_k(k)
-  check_fun(fun)
+  #check_fun(fun)
 
   # Set up
   y <- y_fun(object, fun)
