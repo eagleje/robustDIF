@@ -108,7 +108,7 @@ a_fun <- function(mle, log = FALSE) {
 
 y_fun <- function(mle, fun = "d_fun3") {
   check_mle(mle)
-  #check_fun(fun)
+  check_fun(fun)
 
   if (fun == "a_fun1") {y <- a_fun(mle, log = FALSE)}
   if (fun == "a_fun2") {y <- a_fun(mle, log = TRUE)}
@@ -158,11 +158,9 @@ grad_d <- function(mle, theta = NULL, type = 3) {
     k <- 1
     for(i in 1:n.items){
       for(j in 1:n.thresholds){
-        ind1 <- (i-1) * (n.thresholds + 1) + 1
-        ind2 <- ind1 + j
-        ind3 <- ind1 + n.pars/2
-        ind4 <- ind2 + n.pars/2
-        template [c(ind1, ind2, ind3, ind4)] <- grad.mat[, k]
+        ind1 <- (i-1) * n.thresholds + j
+        ind2 <- ind1 + n.pars/2
+        template [c(ind1, ind2)] <- grad.mat[, k]
         grad.list[[k]] <- template
         template <- template * 0
         k <- k + 1
@@ -298,7 +296,7 @@ grad_a <- function(mle, theta = NULL, log = FALSE) {
 
 vcov_y <- function(mle, theta = NULL, fun = "d_fun3") {
   check_mle(mle)
-  #check_fun(fun)
+  check_fun(fun)
   check_theta(theta, allow_null = TRUE)
 
   if (fun == "a_fun1") {grad <- grad_a(mle, theta, log = FALSE)}
@@ -425,7 +423,7 @@ rdif <- function(mle,
                  maxit = 100,
                  method = "irls") {
   check_mle(mle)
-  #check_fun(fun)
+  check_fun(fun)
   check_alpha(alpha)
   check_starting_value(starting.value)
   check_method(method)
@@ -606,7 +604,7 @@ lts <- function(y, p = 0.5) {
 
 rho_grid <- function(mle, fun = "d_fun3", alpha = .05, grid.width = .01){
   check_mle(mle)
-  #check_fun(fun)
+  check_fun(fun)
   check_alpha(alpha)
   check_grid_width(grid.width)
 
@@ -658,7 +656,7 @@ dif_test <- function(object, theta = NULL, fun = "d_fun3") {
 
   check_mle(object)
   check_theta(theta)
-  #check_fun(fun)
+  check_fun(fun)
 
   y <- y_fun(object, fun)
   numerator <- y - theta
@@ -715,7 +713,7 @@ delta_test <- function(object, theta = NULL, k = NULL, fun = "d_fun3")
   check_mle(object)
   check_theta(theta)
   check_k(k)
-  #check_fun(fun)
+  check_fun(fun)
 
   # Set up
   y <- y_fun(object, fun)
