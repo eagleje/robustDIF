@@ -22,7 +22,7 @@ NULL
 #'
 #'
 #' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
-#' @param type a number in \code{1:3} indicating which version of delta to compute. See description for details.
+#' @param type a number in \code{1:4} indicating which version of delta to compute. See description for details.
 #' @return The vector of scaling function values.
 
 #' @description
@@ -31,6 +31,7 @@ NULL
 #'  \item \code{type = 1}: computes \code{d.fun1 = (d2 - d1)/a1}
 #'  \item \code{type = 2}: computes \code{d.fun2 = (d2 - d1)/a2}
 #'  \item \code{type = 3}: computes \code{d.fun3 = (d2 - d1)/sqrt{(a1^2 + a2^2)/2}}
+#'  \item \code{type = 4}: computes \code{d.fun4 = (d2 - d1)}
 #'  }
 #'
 # -------------------------------------------------------------------
@@ -91,7 +92,7 @@ a_fun <- function(mle, log = FALSE) {
 #' Computes the scaling function specified by \code{fun}, for each item.
 #'
 #' @param mle the output of \code{\link[robustDIF]{get_model_parms}}
-#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3")}. See description for details.
+#' @param fun one of \code{c("a_fun1", "a_fun2", "d_fun1", "d_fun2", "d_fun3", "rasch)}. See description for details.
 #'
 #' @return A vector of scaling function values.
 #' @description
@@ -102,6 +103,7 @@ a_fun <- function(mle, log = FALSE) {
 #' \item \code{"d_fun1"}: computes \code{(d2 - d1)/a1} for each threshold
 #' \item \code{"d_fun2"}: computes \code{(d2 - d1)/a2} for each threshold
 #' \item \code{"d_fun3"}: computes \code{(d2 - d1)/sqrt((a1^2 + a2^2)/2)} for each threshold
+#' \item \code{"rasch"}: computes \code{(d2 - d1) for each threshold}
 #' }
 #' @export
 # -------------------------------------------------------------------
@@ -204,7 +206,7 @@ grad_d <- function(mle, theta = NULL, type = 3) {
     grad.mat[3, ] <-  -a2 / (a1^2 + a2^2) *theta
     grad.mat[4, ] <-  ((a1^2 + a2^2)/2)^-0.5
   } else {
-    stop("type must be one a number in {1:3}")
+    stop("type must be one a number in {1:4}")
   }
 
   # Convert each column of grad.mat to an n.pars by 1 vector conformable with VCOV

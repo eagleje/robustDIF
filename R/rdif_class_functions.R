@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------------
 #' S3 print method for objects of class "rdif"
-#' Prints the estimated scaling parameter from rdif. (to be added: SE)
+#' Prints the estimated scaling parameter from rdif.
 #'
 #' @param x An object of class 'rdif', the saved output from the \code{rdif()} function.
 #' @param ... Additional arguments passed through from the generic.

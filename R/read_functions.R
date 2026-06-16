@@ -17,7 +17,7 @@
 #' The function takes a fitted 1-factor multigroup model or list of fitted 1-factor single group models. The factor must be standardized (i.e., variance = 1) and the covariance matrix be asymptotically correct.
 #' Currently, the function accepts:
 #' \itemize{
-#' \item a \code{\link[mirt]{mirt}} object of class \code{SingleGroupClass} or \code{MultipleGroupClass} with \code{SE = TRUE} (to return covariance matrix) and \code{itemtype} of any combination of \code{"2PL", "graded", or "gpcm"}.
+#' \item a \code{\link[mirt]{mirt}} object of class \code{SingleGroupClass} or \code{MultipleGroupClass} with \code{SE = TRUE} (to return covariance matrix) and \code{itemtype} of any combination of \code{"Rasch", "2PL", "graded", or "gpcm"}.
 #' \item a \code{lavaan} object estimated from \code{\link[lavaan]{cfa}} with \code{std.lv = TRUE}.
 #'}
 #' When \code{cluster} is supplied for mirt fits, the covariance matrix is computed using a cluster-robust sandwich estimator with Oakes bread and cluster-summed empirical scores.
@@ -102,7 +102,7 @@ get_model_parms <- function(object, cluster = NULL) {
 #-------------------------------------------------------------------
 #' Extract item parameter estimates and their covariance matrix from \code{\link[mirt]{mirt}}.
 #'
-#' @param mirt.object a \code{\link[mirt]{mirt}} object of class \code{SingleGroupClass} or \code{MultipleGroupClass}. Expected to be a 1-factor model with \code{SE = TRUE} and \code{itemtype} of any combination of \code{"2PL", "graded", or "gpcm"}.
+#' @param mirt.object a \code{\link[mirt]{mirt}} object of class \code{SingleGroupClass} or \code{MultipleGroupClass}. Expected to be a 1-factor model with \code{SE = TRUE} and \code{itemtype} of any combination of \code{"Rasch", "2PL", "graded", or "gpcm"}.
 #' @param cluster optional cluster-ID vector used to compute a cluster-robust covariance matrix
 #' using Oakes bread, empirical score outer products aggregated by cluster, and a CR1 finite-sample correction.
 #' @return A three-element \code{list}:
